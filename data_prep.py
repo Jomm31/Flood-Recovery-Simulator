@@ -35,13 +35,19 @@ def classify_natural_breaks(series, k=5):
     """Reclassify a continuous factor into k natural-breaks (Jenks) classes,
     matching the paper's treatment of elevation/slope/aspect/rainfall."""
     values = series.values
+    unique_vals = len(np.unique(values))
+    actual_k = min(k, unique_vals)
+    
+    if actual_k < 2:
+        return np.zeros(len(values), dtype=int)
+        
     if HAS_JENKS:
-        breaks = jenkspy.jenks_breaks(values, n_classes=k)
-        return pd.cut(series, bins=breaks, labels=False, include_lowest=True)
+        breaks = jenkspy.jenks_breaks(values, n_classes=actual_k)
+        return pd.cut(series, bins=breaks, labels=False, include_lowest=True, duplicates='drop').fillna(0).astype(int)
     else:
         # Fallback: 1D k-means binning is a close practical approximation
         # of Jenks natural breaks when jenkspy isn't installed.
-        est = KBinsDiscretizer(n_bins=k, encode='ordinal', strategy='kmeans')
+        est = KBinsDiscretizer(n_bins=actual_k, encode='ordinal', strategy='kmeans')
         return est.fit_transform(values.reshape(-1, 1)).astype(int).ravel()
 
 def classify_quantile(series, k=5):
