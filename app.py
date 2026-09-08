@@ -127,8 +127,7 @@ try:
     # Pearson Correlation
     st.subheader("Pearson Correlation Matrix")
     corr_matrix = df[FEATURE_COLS].corr()
-    st.dataframe(corr_matrix.style.background_gradient(cmap="RdBu_r", vmin=-1, vmax=1).format("{:.3f}"),
-                 use_container_width=True)
+    st.dataframe(corr_matrix.round(3), use_container_width=True)
 
     # ------------------------------------------------------------------
     # STEP 2 — Model Training with GridSearchCV (paper Section 3.5.2)
