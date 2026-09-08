@@ -31,10 +31,9 @@ def match_by_xy(reference_xy, factor_df, value_name):
     _, idx = tree.query(reference_xy)
     return factor_df.iloc[idx].reset_index(drop=True)[value_name]
 
-def classify_natural_breaks(series, k=10):
+def classify_natural_breaks(series, k=5):
     """Reclassify a continuous factor into k natural-breaks (Jenks) classes,
-    matching the paper's treatment of elevation/slope/aspect/rainfall.
-    Default k=10 per Figure 3 (elevation/slope/aspect use 10 classes)."""
+    matching the paper's treatment of elevation/slope/aspect/rainfall."""
     values = series.values
     if HAS_JENKS:
         breaks = jenkspy.jenks_breaks(values, n_classes=k)
@@ -47,8 +46,7 @@ def classify_natural_breaks(series, k=10):
 
 def classify_quantile(series, k=5):
     """Reclassify a continuous factor into k equal-count quantile classes,
-    matching the paper's treatment of NDVI/TWI/SPI/DTR.
-    SPI uses k=10 per Figure 3; NDVI/TWI/DTR use k=5."""
+    matching the paper's treatment of NDVI/TWI/SPI/DTR."""
     return pd.qcut(series, q=k, labels=False, duplicates='drop')
 
 def classify_curvature(series):
@@ -117,28 +115,21 @@ if n_dropped:
 
 # ---------------------------------------------------------------------------
 # 5. Reclassification (matches the baseline paper's methodology):
-#    - Natural breaks: Elevation (k=10), Slope (k=10), Aspect (k=10),
-#                      Rainfall (k=5) — Figure 3 shows 10 classes for
-#                      elevation/slope/aspect; rainfall class count not
-#                      explicitly stated so kept at 5.
-#    - Quantile division: NDVI (k=5), TWI (k=5), SPI (k=10), DTR (k=5)
-#                         Figure 3 shows 10 classes for SPI.
+#    - Natural breaks: Elevation, Slope, Aspect, Rainfall
+#    - Quantile division: NDVI, TWI, SPI, DTR
 #    - Manual: LULC, Soil_Type (already categorical class codes -- kept as-is)
 #              Curvature (concave/flat/convex)
 # ---------------------------------------------------------------------------
 print("Applying reclassification...")
 
-# Natural breaks — Elevation/Slope/Aspect use k=10 per Figure 3; Rainfall k=5
-for col in ['Elevation', 'Slope', 'Aspect']:
-    final_data[col] = classify_natural_breaks(final_data[col], k=10)
+natural_breaks_factors = ['Elevation', 'Slope', 'Aspect', 'Rainfall']
+quantile_factors = ['NDVI', 'TWI', 'SPI', 'DTR']
 
-final_data['Rainfall'] = classify_natural_breaks(final_data['Rainfall'], k=5)
+for col in natural_breaks_factors:
+    final_data[col] = classify_natural_breaks(final_data[col], k=5)
 
-# Quantile — SPI uses k=10 per Figure 3; NDVI/TWI/DTR use k=5
-for col in ['NDVI', 'TWI', 'DTR']:
+for col in quantile_factors:
     final_data[col] = classify_quantile(final_data[col], k=5)
-
-final_data['SPI'] = classify_quantile(final_data['SPI'], k=10)
 
 final_data['Curvature'] = classify_curvature(final_data['Curvature'])
 # LULC and Soil_Type are left as their original class codes (manual/categorical).
