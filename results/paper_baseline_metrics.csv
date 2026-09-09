@@ -1,0 +1,2 @@
+rows,train_rows,test_rows,cv_accuracy,best_parameters,accuracy,auroc,f1,sensitivity,specificity,precision,kappa,mse,rmse
+705,493,212,0.8700680272108844,"{'max_depth': None, 'max_features': None, 'min_samples_leaf': 2, 'n_estimators': 600}",0.8632075471698113,0.952046783625731,0.8397790055248618,0.8,0.9145299145299145,0.8837209302325582,0.7209513435003632,0.13679245283018868,0.36985463743231434
