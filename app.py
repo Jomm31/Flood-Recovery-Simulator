@@ -4,6 +4,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split, GridSearchCV, StratifiedKFold
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import (
     accuracy_score,
     roc_auc_score,
@@ -141,6 +142,18 @@ try:
     st.write(f"**Training:** {len(X_train)} points | **Testing:** {len(X_test)} points "
              f"(stratified 70/30 split)")
 
+    # Feature Scaling (Fig. 2: "Training Dataset -> Feature Scaling -> Scaled
+    # Training data / Scaled Test Data"). Fitted on the training partition only,
+    # then applied to both train and test, to avoid leaking test-set statistics
+    # into the scaler -- matches the paper's stated convention.
+    scaler = MinMaxScaler()
+    X_train_scaled = pd.DataFrame(
+        scaler.fit_transform(X_train), columns=FEATURE_COLS, index=X_train.index
+    )
+    X_test_scaled = pd.DataFrame(
+        scaler.transform(X_test), columns=FEATURE_COLS, index=X_test.index
+    )
+
     if st.button("🚀 Train Baseline Model (with GridSearchCV)"):
         with st.spinner("Running GridSearchCV — this may take a minute..."):
 
@@ -159,12 +172,12 @@ try:
                 scoring="accuracy",
                 n_jobs=-1,
             )
-            grid_search.fit(X_train, y_train)
+            grid_search.fit(X_train_scaled, y_train)
             model = grid_search.best_estimator_
 
             # Predictions
-            predictions = model.predict(X_test)
-            probabilities = model.predict_proba(X_test)[:, 1]
+            predictions = model.predict(X_test_scaled)
+            probabilities = model.predict_proba(X_test_scaled)[:, 1]
 
             # ----------------------------------------------------------
             # STEP 3 — Full Metrics (paper Section 3.6 / 4.2)
@@ -191,7 +204,7 @@ try:
             rmse = mse ** 0.5
 
             # Training AUROC (paper reports train AUROC = 1.000 for RF)
-            train_proba = model.predict_proba(X_train)[:, 1]
+            train_proba = model.predict_proba(X_train_scaled)[:, 1]
             train_auroc = roc_auc_score(y_train, train_proba)
 
             # Display metrics in columns
@@ -236,3 +249,15 @@ except FileNotFoundError:
         "Could not find data/baseline_training_data.csv. "
         "Make sure your data_prep.py script ran successfully!"
     )
+
+import pandas as pd
+df = pd.read_csv('data/baseline_training_data.csv')
+
+print("Aspect distribution by Flood_Class:")
+print(pd.crosstab(df['Aspect'], df['Flood_Class']))
+print()
+print("LULC value counts:")
+print(df['LULC'].value_counts())
+print()
+print("LULC distribution by Flood_Class:")
+print(pd.crosstab(df['LULC'], df['Flood_Class']))
